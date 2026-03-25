@@ -21,35 +21,35 @@ let index    = 0;        // current position
 let mode     = 'top';
 let loading  = false;
 
+// Per-mode remembered positions
+const ALL_MODES = ['top', 'new', 'past', 'comments', 'ask', 'show', 'job'];
+const modePositions = Object.fromEntries(ALL_MODES.map(m => [m, 0]));
+
 // ── Persistence ────────────────────────────────────────────────────────────
 function saveState() {
-  // URL hash is the most reliable — it survives a refresh by definition
-  history.replaceState(null, '', `#${mode}:${index}`);
-  // localStorage as a secondary backup
+  modePositions[mode] = index;
+  // URL hash encodes current mode + all positions, survives refresh
+  const positions = ALL_MODES.map(m => modePositions[m]).join(',');
+  history.replaceState(null, '', `#${mode}:${positions}`);
   try {
-    localStorage.setItem('hn_mode', mode);
-    localStorage.setItem('hn_index', String(index));
+    localStorage.setItem('hn_state', `${mode}:${positions}`);
   } catch (_) {}
 }
 
 function loadSavedState() {
-  // 1. URL hash  (e.g. #top:2)
-  const hash = location.hash.slice(1);
-  if (hash) {
-    const [m, raw] = hash.split(':');
-    const i = parseInt(raw, 10);
-    if (m && (MODE_ENDPOINTS[m] || m === 'comments') && !isNaN(i)) {
-      return { savedMode: m, savedIndex: i };
+  const raw = location.hash.slice(1) ||
+    (() => { try { return localStorage.getItem('hn_state') || ''; } catch(_) { return ''; } })();
+
+  if (raw) {
+    const [m, posStr] = raw.split(':');
+    if (m && ALL_MODES.includes(m) && posStr) {
+      posStr.split(',').forEach((v, i) => {
+        const n = parseInt(v, 10);
+        if (!isNaN(n)) modePositions[ALL_MODES[i]] = n;
+      });
+      return { savedMode: m, savedIndex: modePositions[m] };
     }
   }
-  // 2. localStorage fallback
-  try {
-    const m = localStorage.getItem('hn_mode');
-    const i = parseInt(localStorage.getItem('hn_index') || '0', 10);
-    if (m && (MODE_ENDPOINTS[m] || m === 'comments') && !isNaN(i)) {
-      return { savedMode: m, savedIndex: i };
-    }
-  } catch (_) {}
   return { savedMode: 'top', savedIndex: 0 };
 }
 
@@ -311,7 +311,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    loadMode(btn.dataset.mode, 0);
+    loadMode(btn.dataset.mode, modePositions[btn.dataset.mode] || 0);
   });
 });
 

@@ -23,15 +23,34 @@ let loading  = false;
 
 // ── Persistence ────────────────────────────────────────────────────────────
 function saveState() {
-  localStorage.setItem('hn_mode', mode);
-  localStorage.setItem('hn_index', index);
+  // URL hash is the most reliable — it survives a refresh by definition
+  history.replaceState(null, '', `#${mode}:${index}`);
+  // localStorage as a secondary backup
+  try {
+    localStorage.setItem('hn_mode', mode);
+    localStorage.setItem('hn_index', String(index));
+  } catch (_) {}
 }
 
 function loadSavedState() {
-  return {
-    savedMode:  localStorage.getItem('hn_mode')  || 'top',
-    savedIndex: parseInt(localStorage.getItem('hn_index') || '0', 10),
-  };
+  // 1. URL hash  (e.g. #top:2)
+  const hash = location.hash.slice(1);
+  if (hash) {
+    const [m, raw] = hash.split(':');
+    const i = parseInt(raw, 10);
+    if (m && (MODE_ENDPOINTS[m] || m === 'comments') && !isNaN(i)) {
+      return { savedMode: m, savedIndex: i };
+    }
+  }
+  // 2. localStorage fallback
+  try {
+    const m = localStorage.getItem('hn_mode');
+    const i = parseInt(localStorage.getItem('hn_index') || '0', 10);
+    if (m && (MODE_ENDPOINTS[m] || m === 'comments') && !isNaN(i)) {
+      return { savedMode: m, savedIndex: i };
+    }
+  } catch (_) {}
+  return { savedMode: 'top', savedIndex: 0 };
 }
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -292,7 +311,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    loadMode(btn.dataset.mode);
+    loadMode(btn.dataset.mode, 0);
   });
 });
 

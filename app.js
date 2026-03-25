@@ -549,6 +549,13 @@ function buildDoomPost(item) {
   const post = document.createElement('article');
   post.className = 'dp';
 
+  // Whole-card click → main URL (article or HN thread), except on action links/buttons
+  const cardDest = hasUrl ? item.url : hnUrl;
+  post.addEventListener('click', (e) => {
+    if (e.target.closest('a, button')) return;
+    window.open(cardDest, '_blank', 'noopener noreferrer');
+  });
+
   // ── Header ────────────────────────────────────────────────────────────────
   const header = el('header', 'dp-header');
 

@@ -423,6 +423,11 @@ body.doom-active main {
   width: calc(100% - 2rem);
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  cursor: pointer;
+}
+
+.dp:hover {
+  box-shadow: 0 3px 12px rgba(0,0,0,.12);
 }
 
 /* ── Post header ───────────────────────────────────────────────────────── */

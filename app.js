@@ -5,7 +5,7 @@ const HN_ITEM_URL = 'https://news.ycombinator.com/item?id=';
 const MODE_ENDPOINTS = {
   top:      () => `${HN_API}/topstories.json`,
   new:      () => `${HN_API}/newstories.json`,
-  past:     () => `${HN_API}/beststories.json`,
+  best:     () => `${HN_API}/beststories.json`,
   ask:      () => `${HN_API}/askstories.json`,
   show:     () => `${HN_API}/showstories.json`,
   job:      () => `${HN_API}/jobstories.json`,
@@ -20,17 +20,61 @@ let ids      = [];       // list of story IDs (or algolia hits for comments)
 let index    = 0;        // current position
 let mode     = 'top';
 let loading  = false;
+let handlingPopstate = false;
 
 // Per-mode remembered positions
-const ALL_MODES = ['top', 'new', 'past', 'comments', 'ask', 'show', 'job'];
+const ALL_MODES = ['top', 'new', 'best', 'comments', 'ask', 'show', 'job'];
 const modePositions = Object.fromEntries(ALL_MODES.map(m => [m, 0]));
 
+// ── HTML sanitizer ─────────────────────────────────────────────────────────
+// HN API returns HTML in comment/text fields; sanitize before injecting.
+const ALLOWED_TAGS = new Set(['a','b','i','em','strong','p','br','code','pre','ul','ol','li']);
+const ALLOWED_ATTRS = { a: ['href'] };
+
+function sanitizeNode(node) {
+  for (const child of [...node.childNodes]) {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      const tag = child.tagName.toLowerCase();
+      if (!ALLOWED_TAGS.has(tag)) {
+        while (child.firstChild) node.insertBefore(child.firstChild, child);
+        child.remove();
+        continue;
+      }
+      for (const attr of [...child.attributes]) {
+        const allowed = ALLOWED_ATTRS[tag] || [];
+        if (!allowed.includes(attr.name)) {
+          child.removeAttribute(attr.name);
+        } else if (attr.name === 'href') {
+          const val = (child.getAttribute('href') || '').trim();
+          if (/^javascript:/i.test(val) || /^data:/i.test(val)) {
+            child.removeAttribute('href');
+          }
+        }
+      }
+      if (tag === 'a') {
+        child.setAttribute('rel', 'noopener noreferrer');
+        child.setAttribute('target', '_blank');
+      }
+      sanitizeNode(child);
+    } else if (child.nodeType !== Node.TEXT_NODE) {
+      child.remove();
+    }
+  }
+}
+
+function sanitizeHTML(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  sanitizeNode(doc.body);
+  return doc.body.innerHTML;
+}
+
 // ── Persistence ────────────────────────────────────────────────────────────
-function saveState() {
+function saveState(addToHistory = false) {
   modePositions[mode] = index;
-  // URL hash encodes current mode + all positions, survives refresh
   const positions = ALL_MODES.map(m => modePositions[m]).join(',');
-  history.replaceState(null, '', `#${mode}:${positions}`);
+  const hash = `#${mode}:${positions}`;
+  const fn = addToHistory ? 'pushState' : 'replaceState';
+  history[fn]({ mode, index }, '', hash);
   try {
     localStorage.setItem('hn_state', `${mode}:${positions}`);
   } catch (_) {}
@@ -42,12 +86,14 @@ function loadSavedState() {
 
   if (raw) {
     const [m, posStr] = raw.split(':');
-    if (m && ALL_MODES.includes(m) && posStr) {
+    // Accept old "past" key from saved state and map it to "best"
+    const normalised = m === 'past' ? 'best' : m;
+    if (normalised && ALL_MODES.includes(normalised) && posStr) {
       posStr.split(',').forEach((v, i) => {
         const n = parseInt(v, 10);
         if (!isNaN(n)) modePositions[ALL_MODES[i]] = n;
       });
-      return { savedMode: m, savedIndex: modePositions[m] };
+      return { savedMode: normalised, savedIndex: modePositions[normalised] };
     }
   }
   return { savedMode: 'top', savedIndex: 0 };
@@ -60,6 +106,7 @@ const elErrorMsg  = document.getElementById('error-msg');
 const elRetry     = document.getElementById('retry-btn');
 const elCard      = document.getElementById('card');
 const elControls  = document.getElementById('nav-controls');
+const elAnnounce  = document.getElementById('sr-announce');
 
 const elTitle     = document.getElementById('card-title');
 const elUrl       = document.getElementById('card-url');
@@ -148,7 +195,7 @@ async function loadMode(m, resumeIndex = 0) {
 }
 
 // ── Render current item ────────────────────────────────────────────────────
-async function renderCurrent() {
+async function renderCurrent(addToHistory = false) {
   if (!ids.length) return;
 
   showLoading();
@@ -179,7 +226,7 @@ async function renderCurrent() {
 
     renderItem(item);
     showCard();
-    saveState();
+    saveState(addToHistory);
   } catch (e) {
     showError(`Failed to load item: ${e.message}`);
   } finally {
@@ -200,12 +247,20 @@ function renderItem(item) {
   elIndex.textContent = `${index + 1} / ${ids.length}`;
 
   // Title
+  let displayTitle;
   if (item.type === 'comment') {
-    elTitle.textContent = item.story_title
-      ? `Re: ${item.story_title}`
-      : 'Comment';
+    displayTitle = item.story_title ? `Re: ${item.story_title}` : 'Comment';
   } else {
-    elTitle.textContent = item.title || '(no title)';
+    displayTitle = item.title || '(no title)';
+  }
+  elTitle.textContent = displayTitle;
+
+  // Update browser tab title
+  document.title = `${displayTitle} | HN Reader`;
+
+  // Announce to screen readers
+  if (elAnnounce) {
+    elAnnounce.textContent = `${index + 1} of ${ids.length}: ${displayTitle}`;
   }
 
   // URL
@@ -243,16 +298,16 @@ function renderItem(item) {
       : hnLink;
     setVisible(elComments, true);
   } else if (commentCount != null) {
-    elComments.textContent = `${commentCount} comments`;
+    elComments.textContent = `${commentCount} comment${commentCount !== 1 ? 's' : ''}`;
     elComments.href = hnLink;
     setVisible(elComments, true);
   } else {
     setVisible(elComments, false);
   }
 
-  // Body text (Ask HN posts, job posts, comments)
+  // Body text (Ask HN posts, job posts, comments) — sanitized before injection
   if (item.text) {
-    elText.innerHTML = item.text; // HN already HTML-encodes content
+    elText.innerHTML = sanitizeHTML(item.text);
     setVisible(elText, true);
   } else {
     elText.innerHTML = '';
@@ -276,7 +331,7 @@ async function go(delta) {
   const next = index + delta;
   if (next < 0 || next >= ids.length) return;
   index = next;
-  await renderCurrent();
+  await renderCurrent(true); // push to browser history
 }
 
 elPrev.addEventListener('click', () => go(-1));
@@ -286,23 +341,57 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   switch (e.key) {
     case 'ArrowLeft':
-    case 'ArrowUp':
-    case 'k':
     case 'h':
       go(-1); break;
     case 'ArrowRight':
-    case 'ArrowDown':
-    case 'j':
     case 'l':
       go(1); break;
-    case 'o':
-      if (window.__currentItem?.url) window.open(window.__currentItem.url, '_blank', 'noopener');
-      break;
-    case 'c': {
-      const id = window.__currentItem?.id || window.__currentItem?.objectID;
-      if (id) window.open(`${HN_ITEM_URL}${id}`, '_blank', 'noopener');
+    case 'k':
+      go(-1); break;
+    case 'j':
+      go(1); break;
+    case 'o': {
+      const item = window.__currentItem;
+      if (item?.url) {
+        window.open(item.url, '_blank', 'noopener');
+      } else if (item?.type === 'comment' && item?.story_id) {
+        // No article URL for comments — open story thread instead
+        window.open(`${HN_ITEM_URL}${item.story_id}`, '_blank', 'noopener');
+      }
       break;
     }
+    case 'c': {
+      const item = window.__currentItem;
+      // For comments, open the parent story thread (not the bare comment page)
+      if (item?.type === 'comment' && item?.story_id) {
+        window.open(`${HN_ITEM_URL}${item.story_id}`, '_blank', 'noopener');
+      } else {
+        const id = item?.id || item?.objectID;
+        if (id) window.open(`${HN_ITEM_URL}${id}`, '_blank', 'noopener');
+      }
+      break;
+    }
+  }
+});
+
+// ── Browser history (back/forward) ─────────────────────────────────────────
+window.addEventListener('popstate', async (e) => {
+  if (handlingPopstate) return;
+  handlingPopstate = true;
+  try {
+    const state = e.state;
+    if (!state) return;
+    if (state.mode !== mode) {
+      mode = state.mode;
+      document.querySelectorAll('.mode-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.mode === mode));
+      await loadMode(mode, state.index);
+    } else {
+      index = state.index;
+      await renderCurrent(false);
+    }
+  } finally {
+    handlingPopstate = false;
   }
 });
 

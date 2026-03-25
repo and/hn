@@ -16,7 +16,7 @@
     <nav class="modes">
       <button class="mode-btn active" data-mode="top">top</button>
       <button class="mode-btn" data-mode="new">new</button>
-      <button class="mode-btn" data-mode="past">past</button>
+      <button class="mode-btn" data-mode="best">best</button>
       <button class="mode-btn" data-mode="comments">comments</button>
       <button class="mode-btn" data-mode="ask">ask</button>
       <button class="mode-btn" data-mode="show">show</button>
@@ -48,27 +48,34 @@
       </div>
 
       <div class="card-info">
-        <span id="card-score" class="info-chip score" title="points"></span>
-        <span id="card-author" class="info-chip author" title="author"></span>
-        <span id="card-time" class="info-chip time" title="posted"></span>
-        <a id="card-comments" class="info-chip comments" href="#" target="_blank" rel="noopener noreferrer" title="comments"></a>
+        <span id="card-score" class="info-chip score"></span>
+        <span id="card-author" class="info-chip author"></span>
+        <span id="card-time" class="info-chip time"></span>
+        <a id="card-comments" class="info-chip comments" href="#" target="_blank" rel="noopener noreferrer"></a>
       </div>
 
       <div id="card-text" class="card-text" hidden></div>
     </article>
 
     <nav class="nav-controls" id="nav-controls" hidden>
-      <button id="prev-btn" class="nav-btn" title="Previous (←)">&#8592; prev</button>
+      <button id="prev-btn" class="nav-btn" title="Previous (← or h/k)">&#8592; prev</button>
       <div class="progress-bar">
         <div id="progress-fill" class="progress-fill"></div>
       </div>
-      <button id="next-btn" class="nav-btn" title="Next (→)">next &#8594;</button>
+      <button id="next-btn" class="nav-btn" title="Next (→ or j/l)">next &#8594;</button>
     </nav>
   </main>
 
   <footer>
-    <span>&#8592; &#8594; to navigate &nbsp;·&nbsp; <kbd>o</kbd> open article &nbsp;·&nbsp; <kbd>c</kbd> open comments</span>
+    <span>&#8592; &#8594; &nbsp;/&nbsp; <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd> navigate &nbsp;·&nbsp; <kbd>o</kbd> open article &nbsp;·&nbsp; <kbd>c</kbd> open comments</span>
   </footer>
+
+  <!-- Screen-reader live region: announces story changes on navigation -->
+  <div id="sr-announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <noscript>
+    <div class="noscript-msg">JavaScript is required to use HN Reader.</div>
+  </noscript>
 
   <script src="app.js"></script>
 </body>

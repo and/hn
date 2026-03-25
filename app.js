@@ -566,7 +566,12 @@ function buildDoomPost(item) {
   const header = el('header', 'dp-header');
 
   const avatar = el('div', 'dp-avatar');
-  avatar.textContent = 'Y';
+  const avatarImg = el('img', 'dp-avatar-img');
+  avatarImg.src = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(item.by || 'unknown')}`;
+  avatarImg.alt = item.by || 'unknown';
+  avatarImg.width = 38;
+  avatarImg.height = 38;
+  avatar.appendChild(avatarImg);
 
   const meta = el('div', 'dp-meta');
   const authorEl = el('span', 'dp-author');

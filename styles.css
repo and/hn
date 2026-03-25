@@ -442,16 +442,17 @@ body.doom-active main {
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 50%;
-  background: var(--orange);
-  color: #fff;
-  font-weight: 800;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #f0ede6;
   flex-shrink: 0;
+  overflow: hidden;
   /* Instagram-style story ring */
   box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--orange);
+}
+
+.dp-avatar-img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .dp-meta {

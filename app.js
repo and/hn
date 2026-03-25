@@ -169,6 +169,9 @@ async function fetchJSON(url) {
 
 // ── Load mode ──────────────────────────────────────────────────────────────
 async function loadMode(m, resumeIndex = 0) {
+  // Guard: doom is handled separately and has no MODE_ENDPOINTS entry
+  if (m === 'doom' || (!MODE_ENDPOINTS[m] && m !== 'comments')) return;
+
   mode  = m;
   index = 0;
   ids   = [];
@@ -176,11 +179,13 @@ async function loadMode(m, resumeIndex = 0) {
   showLoading();
 
   try {
-    if (mode === 'comments') {
+    if (m === 'comments') {
       const data = await fetchJSON(ALGOLIA_COMMENTS_URL);
       ids = data.hits || [];
     } else {
-      const list = await fetchJSON(MODE_ENDPOINTS[mode]());
+      // Use local `m` (not global `mode`) so concurrent doom activation
+      // can't swap mode mid-flight and break the endpoint lookup
+      const list = await fetchJSON(MODE_ENDPOINTS[m]());
       ids = list.slice(0, 100);
     }
 
@@ -350,11 +355,12 @@ window.addEventListener('popstate', async (e) => {
   try {
     const state = e.state;
     if (!state) return;
-    if (state.mode !== mode) {
-      mode = state.mode;
-      document.querySelectorAll('.mode-btn').forEach(b =>
-        b.classList.toggle('active', b.dataset.mode === mode));
-      await loadMode(mode, state.index);
+    document.querySelectorAll('.mode-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === state.mode));
+    if (state.mode === 'doom') {
+      activateDoom();
+    } else if (state.mode !== mode) {
+      await loadMode(state.mode, state.index);
     } else {
       index = state.index;
       await renderCurrent(false);
@@ -380,7 +386,7 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   });
 });
 
-elRetry.addEventListener('click', () => loadMode(mode));
+elRetry.addEventListener('click', () => { if (mode !== 'doom') loadMode(mode); });
 
 // ════════════════════════════════════════════════════════════════════════════
 // ── Doom scroll ─────────────────────────────────────────────────────────────

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HN Reader</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="logo">Y</span>
+      <span class="brand-name">HN Reader</span>
+    </div>
+    <nav class="modes">
+      <button class="mode-btn active" data-mode="top">top</button>
+      <button class="mode-btn" data-mode="new">new</button>
+      <button class="mode-btn" data-mode="past">past</button>
+      <button class="mode-btn" data-mode="comments">comments</button>
+      <button class="mode-btn" data-mode="ask">ask</button>
+      <button class="mode-btn" data-mode="show">show</button>
+      <button class="mode-btn" data-mode="job">job</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="loading" class="loading" hidden>
+      <div class="spinner"></div>
+      <p>Loading…</p>
+    </div>
+
+    <div id="error" class="error" hidden>
+      <p id="error-msg"></p>
+      <button id="retry-btn">Retry</button>
+    </div>
+
+    <article id="card" class="card" hidden>
+      <div class="card-meta">
+        <span id="card-index" class="card-index"></span>
+        <span id="card-type" class="card-type"></span>
+      </div>
+
+      <h1 id="card-title" class="card-title"></h1>
+
+      <div class="card-url-row">
+        <a id="card-url" class="card-url" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
+      </div>
+
+      <div class="card-info">
+        <span id="card-score" class="info-chip score" title="points"></span>
+        <span id="card-author" class="info-chip author" title="author"></span>
+        <span id="card-time" class="info-chip time" title="posted"></span>
+        <a id="card-comments" class="info-chip comments" href="#" target="_blank" rel="noopener noreferrer" title="comments"></a>
+      </div>
+
+      <div id="card-text" class="card-text" hidden></div>
+    </article>
+
+    <nav class="nav-controls" id="nav-controls" hidden>
+      <button id="prev-btn" class="nav-btn" title="Previous (←)">&#8592; prev</button>
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <button id="next-btn" class="nav-btn" title="Next (→)">next &#8594;</button>
+    </nav>
+  </main>
+
+  <footer>
+    <span>&#8592; &#8594; to navigate &nbsp;·&nbsp; <kbd>o</kbd> open article &nbsp;·&nbsp; <kbd>c</kbd> open comments</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

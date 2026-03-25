@@ -21,6 +21,19 @@ let index    = 0;        // current position
 let mode     = 'top';
 let loading  = false;
 
+// ── Persistence ────────────────────────────────────────────────────────────
+function saveState() {
+  localStorage.setItem('hn_mode', mode);
+  localStorage.setItem('hn_index', index);
+}
+
+function loadSavedState() {
+  return {
+    savedMode:  localStorage.getItem('hn_mode')  || 'top',
+    savedIndex: parseInt(localStorage.getItem('hn_index') || '0', 10),
+  };
+}
+
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const elLoading   = document.getElementById('loading');
 const elError     = document.getElementById('error');
@@ -85,7 +98,7 @@ async function fetchJSON(url) {
 }
 
 // ── Load mode ──────────────────────────────────────────────────────────────
-async function loadMode(m) {
+async function loadMode(m, resumeIndex = 0) {
   mode  = m;
   index = 0;
   ids   = [];
@@ -107,6 +120,8 @@ async function loadMode(m) {
       return;
     }
 
+    // Restore saved position, clamped to the current list length
+    index = Math.min(resumeIndex, ids.length - 1);
     await renderCurrent();
   } catch (e) {
     showError(`Failed to load: ${e.message}`);
@@ -145,6 +160,7 @@ async function renderCurrent() {
 
     renderItem(item);
     showCard();
+    saveState();
   } catch (e) {
     showError(`Failed to load item: ${e.message}`);
   } finally {
@@ -283,4 +299,11 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
 elRetry.addEventListener('click', () => loadMode(mode));
 
 // ── Boot ───────────────────────────────────────────────────────────────────
-loadMode('top');
+const { savedMode, savedIndex } = loadSavedState();
+
+// Highlight the correct mode button
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.mode === savedMode);
+});
+
+loadMode(savedMode, savedIndex);

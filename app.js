@@ -309,9 +309,11 @@ document.addEventListener('keydown', (e) => {
 // ── Mode switcher ──────────────────────────────────────────────────────────
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    // Snapshot current position before leaving this mode
+    modePositions[mode] = index;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    loadMode(btn.dataset.mode, modePositions[btn.dataset.mode] || 0);
+    loadMode(btn.dataset.mode, modePositions[btn.dataset.mode]);
   });
 });
 

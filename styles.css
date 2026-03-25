@@ -498,30 +498,31 @@ body.doom-active main {
   flex-direction: column;
   justify-content: flex-end;
   gap: .4rem;
-  padding: 2rem 1.25rem 1.25rem;
-  min-height: 9rem;
-  background: #111;
+  padding: 1.5rem 1.25rem 1.1rem;
+  min-height: 7rem;
+  background: #f0ede6;
   text-decoration: none;
   transition: background .15s;
   position: relative;
   overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
-/* Subtle HN-orange left accent */
+/* HN-orange left accent */
 .dp-link-preview::before {
   content: '';
   position: absolute;
   top: 0; left: 0;
   width: 4px; height: 100%;
   background: var(--orange);
-  opacity: .7;
 }
 
-.dp-link-preview:hover { background: #1e1e1e; }
+.dp-link-preview:hover { background: #e8e4db; }
 
 .dp-link-host {
   font-size: .68rem;
-  color: rgba(255,255,255,.45);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: .08em;
   font-weight: 600;
@@ -531,7 +532,7 @@ body.doom-active main {
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.35;
-  color: #fff;
+  color: var(--text);
   overflow-wrap: break-word;
 }
 

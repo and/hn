@@ -21,6 +21,7 @@
       <button class="mode-btn" data-mode="ask">ask</button>
       <button class="mode-btn" data-mode="show">show</button>
       <button class="mode-btn" data-mode="job">job</button>
+      <button class="mode-btn mode-btn--doom" data-mode="doom">&#128293; doom</button>
     </nav>
   </header>
 
@@ -64,13 +65,26 @@
       </div>
       <button id="next-btn" class="nav-btn" title="Next (→ or j/l)">next &#8594;</button>
     </nav>
+
+    <!-- ── Doom scroll view ────────────────────────────────────────────── -->
+    <div id="doom-view" class="doom-view" hidden>
+      <div class="doom-tabs-bar">
+        <button class="doom-tab active" data-doom="sequential">Sequential</button>
+        <button class="doom-tab" data-doom="mix">Mix</button>
+      </div>
+      <div id="doom-feed" class="doom-feed">
+        <!-- posts injected by JS before doom-more -->
+        <div id="doom-more" class="doom-more">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer>
     <span>&#8592; &#8594; &nbsp;/&nbsp; <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd> navigate &nbsp;·&nbsp; <kbd>o</kbd> open article &nbsp;·&nbsp; <kbd>c</kbd> open comments</span>
   </footer>
 
-  <!-- Screen-reader live region: announces story changes on navigation -->
   <div id="sr-announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
   <noscript>

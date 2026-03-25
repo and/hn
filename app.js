@@ -11,23 +11,20 @@ const MODE_ENDPOINTS = {
   job:      () => `${HN_API}/jobstories.json`,
 };
 
-// Comments mode uses Algolia search API (returns comment items directly)
 const ALGOLIA_COMMENTS_URL =
   `${HN_ALGOLIA}/search_by_date?tags=comment&hitsPerPage=100`;
 
 // ── State ──────────────────────────────────────────────────────────────────
-let ids      = [];       // list of story IDs (or algolia hits for comments)
-let index    = 0;        // current position
+let ids      = [];
+let index    = 0;
 let mode     = 'top';
 let loading  = false;
 let handlingPopstate = false;
 
-// Per-mode remembered positions
 const ALL_MODES = ['top', 'new', 'best', 'comments', 'ask', 'show', 'job'];
 const modePositions = Object.fromEntries(ALL_MODES.map(m => [m, 0]));
 
 // ── HTML sanitizer ─────────────────────────────────────────────────────────
-// HN API returns HTML in comment/text fields; sanitize before injecting.
 const ALLOWED_TAGS = new Set(['a','b','i','em','strong','p','br','code','pre','ul','ol','li']);
 const ALLOWED_ATTRS = { a: ['href'] };
 
@@ -86,7 +83,6 @@ function loadSavedState() {
 
   if (raw) {
     const [m, posStr] = raw.split(':');
-    // Accept old "past" key from saved state and map it to "best"
     const normalised = m === 'past' ? 'best' : m;
     if (normalised && ALL_MODES.includes(normalised) && posStr) {
       posStr.split(',').forEach((v, i) => {
@@ -107,6 +103,9 @@ const elRetry     = document.getElementById('retry-btn');
 const elCard      = document.getElementById('card');
 const elControls  = document.getElementById('nav-controls');
 const elAnnounce  = document.getElementById('sr-announce');
+const elDoomView  = document.getElementById('doom-view');
+const elDoomFeed  = document.getElementById('doom-feed');
+const elDoomMore  = document.getElementById('doom-more');
 
 const elTitle     = document.getElementById('card-title');
 const elUrl       = document.getElementById('card-url');
@@ -129,6 +128,11 @@ function timeAgo(unix) {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function fmtCount(n) {
+  if (n == null) return '';
+  return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n);
 }
 
 function setVisible(el, show) {
@@ -174,11 +178,10 @@ async function loadMode(m, resumeIndex = 0) {
   try {
     if (mode === 'comments') {
       const data = await fetchJSON(ALGOLIA_COMMENTS_URL);
-      // Store algolia hits so we can render them directly
       ids = data.hits || [];
     } else {
       const list = await fetchJSON(MODE_ENDPOINTS[mode]());
-      ids = list.slice(0, 100); // cap at 100
+      ids = list.slice(0, 100);
     }
 
     if (!ids.length) {
@@ -186,7 +189,6 @@ async function loadMode(m, resumeIndex = 0) {
       return;
     }
 
-    // Restore saved position, clamped to the current list length
     index = Math.min(resumeIndex, ids.length - 1);
     await renderCurrent();
   } catch (e) {
@@ -206,7 +208,6 @@ async function renderCurrent(addToHistory = false) {
 
     if (mode === 'comments') {
       const hit = ids[index];
-      // Map algolia comment hit to a consistent shape
       item = {
         id:          hit.objectID,
         type:        'comment',
@@ -235,18 +236,11 @@ async function renderCurrent(addToHistory = false) {
 }
 
 function renderItem(item) {
-  if (!item) {
-    showError('Item not found.');
-    return;
-  }
+  if (!item) { showError('Item not found.'); return; }
 
-  // Type badge
   elType.textContent = item.type || '';
-
-  // Index counter
   elIndex.textContent = `${index + 1} / ${ids.length}`;
 
-  // Title
   let displayTitle;
   if (item.type === 'comment') {
     displayTitle = item.story_title ? `Re: ${item.story_title}` : 'Comment';
@@ -254,16 +248,12 @@ function renderItem(item) {
     displayTitle = item.title || '(no title)';
   }
   elTitle.textContent = displayTitle;
-
-  // Update browser tab title
   document.title = `${displayTitle} | HN Reader`;
 
-  // Announce to screen readers
   if (elAnnounce) {
     elAnnounce.textContent = `${index + 1} of ${ids.length}: ${displayTitle}`;
   }
 
-  // URL
   const hasUrl = item.url && item.type !== 'comment';
   setVisible(elUrl, hasUrl);
   if (hasUrl) {
@@ -271,7 +261,6 @@ function renderItem(item) {
     elUrl.textContent = new URL(item.url).hostname.replace(/^www\./, '');
   }
 
-  // Score
   if (item.score != null) {
     elScore.textContent = `▲ ${item.score}`;
     setVisible(elScore, true);
@@ -279,23 +268,18 @@ function renderItem(item) {
     setVisible(elScore, false);
   }
 
-  // Author
   elAuthor.textContent = item.by ? `by ${item.by}` : '';
   setVisible(elAuthor, !!item.by);
 
-  // Time
   elTime.textContent = item.time ? timeAgo(item.time) : '';
   setVisible(elTime, !!item.time);
 
-  // Comments link
   const commentCount = item.descendants;
   const itemId = item.id || item.objectID;
   const hnLink = `${HN_ITEM_URL}${itemId}`;
   if (item.type === 'comment') {
     elComments.textContent = 'view thread';
-    elComments.href = item.story_id
-      ? `${HN_ITEM_URL}${item.story_id}`
-      : hnLink;
+    elComments.href = item.story_id ? `${HN_ITEM_URL}${item.story_id}` : hnLink;
     setVisible(elComments, true);
   } else if (commentCount != null) {
     elComments.textContent = `${commentCount} comment${commentCount !== 1 ? 's' : ''}`;
@@ -305,7 +289,6 @@ function renderItem(item) {
     setVisible(elComments, false);
   }
 
-  // Body text (Ask HN posts, job posts, comments) — sanitized before injection
   if (item.text) {
     elText.innerHTML = sanitizeHTML(item.text);
     setVisible(elText, true);
@@ -314,14 +297,10 @@ function renderItem(item) {
     setVisible(elText, false);
   }
 
-  // Progress bar
   elProgress.style.width = `${((index + 1) / ids.length) * 100}%`;
-
-  // Prev / next button state
   elPrev.disabled = index === 0;
   elNext.disabled = index === ids.length - 1;
 
-  // Store for keyboard shortcuts
   window.__currentItem = item;
 }
 
@@ -331,7 +310,7 @@ async function go(delta) {
   const next = index + delta;
   if (next < 0 || next >= ids.length) return;
   index = next;
-  await renderCurrent(true); // push to browser history
+  await renderCurrent(true);
 }
 
 elPrev.addEventListener('click', () => go(-1));
@@ -339,33 +318,24 @@ elNext.addEventListener('click', () => go(1));
 
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (mode === 'doom') return; // doom scroll uses native scroll
   switch (e.key) {
-    case 'ArrowLeft':
-    case 'h':
-      go(-1); break;
-    case 'ArrowRight':
-    case 'l':
-      go(1); break;
-    case 'k':
-      go(-1); break;
-    case 'j':
-      go(1); break;
+    case 'ArrowLeft':  case 'h': go(-1); break;
+    case 'ArrowRight': case 'l': go(1);  break;
+    case 'k': go(-1); break;
+    case 'j': go(1);  break;
     case 'o': {
       const item = window.__currentItem;
-      if (item?.url) {
-        window.open(item.url, '_blank', 'noopener');
-      } else if (item?.type === 'comment' && item?.story_id) {
-        // No article URL for comments — open story thread instead
+      if (item?.url) window.open(item.url, '_blank', 'noopener');
+      else if (item?.type === 'comment' && item?.story_id)
         window.open(`${HN_ITEM_URL}${item.story_id}`, '_blank', 'noopener');
-      }
       break;
     }
     case 'c': {
       const item = window.__currentItem;
-      // For comments, open the parent story thread (not the bare comment page)
-      if (item?.type === 'comment' && item?.story_id) {
+      if (item?.type === 'comment' && item?.story_id)
         window.open(`${HN_ITEM_URL}${item.story_id}`, '_blank', 'noopener');
-      } else {
+      else {
         const id = item?.id || item?.objectID;
         if (id) window.open(`${HN_ITEM_URL}${id}`, '_blank', 'noopener');
       }
@@ -374,7 +344,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ── Browser history (back/forward) ─────────────────────────────────────────
 window.addEventListener('popstate', async (e) => {
   if (handlingPopstate) return;
   handlingPopstate = true;
@@ -398,20 +367,307 @@ window.addEventListener('popstate', async (e) => {
 // ── Mode switcher ──────────────────────────────────────────────────────────
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    // Snapshot current position before leaving this mode
     modePositions[mode] = index;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    loadMode(btn.dataset.mode, modePositions[btn.dataset.mode]);
+    const m = btn.dataset.mode;
+    if (m === 'doom') {
+      activateDoom();
+    } else {
+      deactivateDoom();
+      loadMode(m, modePositions[m] || 0);
+    }
   });
 });
 
 elRetry.addEventListener('click', () => loadMode(mode));
 
+// ════════════════════════════════════════════════════════════════════════════
+// ── Doom scroll ─────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+
+const DOOM_FEEDS = ['top', 'new', 'best', 'ask', 'show', 'job', 'comments'];
+const DOOM_BATCH = 8;
+
+// SVG icon strings
+const SVG_HEART = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+const SVG_COMMENT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+const SVG_SHARE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+
+// Doom state
+let doomSubMode  = 'sequential';
+let doomQueue    = []; // [{sourceMode, id?, hit?}]
+let doomQueuePos = 0;
+let doomFetching = false;
+let doomObserver = null;
+let doomSourcesReady = false;
+
+function activateDoom() {
+  mode = 'doom';
+  document.body.classList.add('doom-active');
+  setVisible(elLoading, false);
+  setVisible(elError, false);
+  setVisible(elCard, false);
+  setVisible(elControls, false);
+  setVisible(elDoomView, true);
+  document.title = 'Doom Scroll | HN Reader';
+  startDoom(doomSubMode);
+}
+
+function deactivateDoom() {
+  document.body.classList.remove('doom-active');
+  setVisible(elDoomView, false);
+  teardownDoomObserver();
+  doomQueue    = [];
+  doomQueuePos = 0;
+  doomFetching = false;
+  doomSourcesReady = false;
+}
+
+function teardownDoomObserver() {
+  if (doomObserver) { doomObserver.disconnect(); doomObserver = null; }
+}
+
+async function startDoom(subMode) {
+  doomSubMode  = subMode;
+  doomQueue    = [];
+  doomQueuePos = 0;
+  doomFetching = false;
+  doomSourcesReady = false;
+  teardownDoomObserver();
+
+  // Clear existing posts (keep doom-more loader at end)
+  [...elDoomFeed.children].forEach(el => {
+    if (el.id !== 'doom-more') el.remove();
+  });
+  setVisible(elDoomMore, true);
+
+  // Update active tab
+  document.querySelectorAll('.doom-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.doom === subMode));
+
+  // Fetch all ID lists in parallel, then start rendering
+  const caps = { top: 500, new: 500, best: 500 };
+  const results = await Promise.allSettled(
+    DOOM_FEEDS.map(async m => {
+      if (m === 'comments') {
+        const data = await fetchJSON(ALGOLIA_COMMENTS_URL);
+        return (data.hits || []).map(hit => ({ sourceMode: 'comments', hit }));
+      }
+      const list = await fetchJSON(MODE_ENDPOINTS[m]());
+      const cap = caps[m] || list.length;
+      return list.slice(0, cap).map(id => ({ sourceMode: m, id }));
+    })
+  );
+
+  const sourceArrays = results.map(r => r.status === 'fulfilled' ? r.value : []);
+
+  if (subMode === 'sequential') {
+    doomQueue = sourceArrays.flat();
+  } else {
+    // Mix: Fisher-Yates shuffle across all sources
+    const all = sourceArrays.flat();
+    for (let i = all.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [all[i], all[j]] = [all[j], all[i]];
+    }
+    doomQueue = all;
+  }
+
+  doomSourcesReady = true;
+
+  // Set up intersection observer on the loader element
+  doomObserver = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) renderDoomBatch();
+  }, { rootMargin: '300px' });
+  doomObserver.observe(elDoomMore);
+
+  // Kick off first batch immediately
+  renderDoomBatch();
+}
+
+async function renderDoomBatch() {
+  if (doomFetching || !doomSourcesReady) return;
+  if (doomQueuePos >= doomQueue.length) {
+    setVisible(elDoomMore, false);
+    return;
+  }
+
+  doomFetching = true;
+  setVisible(elDoomMore, true);
+
+  const slice = doomQueue.slice(doomQueuePos, doomQueuePos + DOOM_BATCH);
+  doomQueuePos += slice.length;
+
+  const settled = await Promise.allSettled(
+    slice.map(async entry => {
+      if (entry.hit) {
+        return {
+          id:          entry.hit.objectID,
+          type:        'comment',
+          by:          entry.hit.author,
+          time:        entry.hit.created_at_i,
+          text:        entry.hit.comment_text,
+          story_title: entry.hit.story_title,
+          story_id:    entry.hit.story_id,
+          score:       null,
+          descendants: null,
+          url:         null,
+          sourceMode:  'comments',
+        };
+      }
+      const item = await fetchJSON(`${HN_API}/item/${entry.id}.json`);
+      if (item) item.sourceMode = entry.sourceMode;
+      return item;
+    })
+  );
+
+  for (const result of settled) {
+    if (result.status === 'fulfilled' && result.value) {
+      elDoomFeed.insertBefore(buildDoomPost(result.value), elDoomMore);
+    }
+  }
+
+  setVisible(elDoomMore, doomQueuePos < doomQueue.length);
+  doomFetching = false;
+
+  // If sentinel is still visible after rendering, fetch another batch
+  if (doomQueuePos < doomQueue.length) {
+    const rect = elDoomMore.getBoundingClientRect();
+    if (rect.top < window.innerHeight + 300) renderDoomBatch();
+  }
+}
+
+function buildDoomPost(item) {
+  const isComment = item.type === 'comment';
+  const hasUrl    = !isComment && !!item.url;
+  const hnUrl     = `${HN_ITEM_URL}${isComment && item.story_id ? item.story_id : item.id}`;
+  const caption   = isComment
+    ? (item.story_title ? `Re: ${item.story_title}` : 'Comment')
+    : (item.title || '(no title)');
+
+  const post = document.createElement('article');
+  post.className = 'dp';
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  const header = el('header', 'dp-header');
+
+  const avatar = el('div', 'dp-avatar');
+  avatar.textContent = 'Y';
+
+  const meta = el('div', 'dp-meta');
+  const authorEl = el('span', 'dp-author');
+  authorEl.textContent = item.by || 'unknown';
+  const infoEl = el('span', 'dp-info');
+  const infoParts = [];
+  if (hasUrl) { try { infoParts.push(new URL(item.url).hostname.replace(/^www\./, '')); } catch(_) {} }
+  if (item.time) infoParts.push(timeAgo(item.time));
+  infoEl.textContent = infoParts.join(' · ');
+  meta.append(authorEl, infoEl);
+
+  const badge = el('span', 'dp-badge');
+  badge.textContent = item.sourceMode || item.type || 'story';
+
+  header.append(avatar, meta, badge);
+  post.appendChild(header);
+
+  // ── Content ───────────────────────────────────────────────────────────────
+  if (hasUrl) {
+    const preview = document.createElement('a');
+    preview.className = 'dp-link-preview';
+    preview.href = item.url;
+    preview.target = '_blank';
+    preview.rel = 'noopener noreferrer';
+
+    const hostEl = el('div', 'dp-link-host');
+    try { hostEl.textContent = new URL(item.url).hostname.replace(/^www\./, ''); } catch(_) {}
+
+    const titleEl = el('div', 'dp-link-title');
+    titleEl.textContent = item.title || '';
+
+    preview.append(hostEl, titleEl);
+    post.appendChild(preview);
+  }
+
+  if (item.text) {
+    const textBody = el('div', 'dp-text-body');
+    textBody.innerHTML = sanitizeHTML(item.text);
+    post.appendChild(textBody);
+  }
+
+  // ── Caption ───────────────────────────────────────────────────────────────
+  const captionEl = el('div', 'dp-caption');
+  const authorStrong = document.createElement('strong');
+  authorStrong.textContent = (item.by || 'unknown') + ' ';
+  captionEl.append(authorStrong, document.createTextNode(caption));
+  post.appendChild(captionEl);
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const actions = el('footer', 'dp-actions');
+  const actLeft = el('div', 'dp-actions-left');
+
+  // Heart / upvotes
+  const likeBtn = el('button', 'dp-btn dp-like');
+  likeBtn.title = 'Points';
+  likeBtn.innerHTML = SVG_HEART;
+  if (item.score != null) {
+    const s = el('span'); s.textContent = fmtCount(item.score);
+    likeBtn.appendChild(s);
+  }
+  actLeft.appendChild(likeBtn);
+
+  // Comment bubble
+  const commentLink = document.createElement('a');
+  commentLink.className = 'dp-btn dp-comment';
+  commentLink.href = hnUrl;
+  commentLink.target = '_blank';
+  commentLink.rel = 'noopener noreferrer';
+  commentLink.title = 'View on HN';
+  commentLink.innerHTML = SVG_COMMENT;
+  if (item.descendants != null) {
+    const s = el('span'); s.textContent = fmtCount(item.descendants);
+    commentLink.appendChild(s);
+  } else if (isComment) {
+    const s = el('span'); s.textContent = 'thread';
+    commentLink.appendChild(s);
+  }
+  actLeft.appendChild(commentLink);
+
+  actions.appendChild(actLeft);
+
+  // Share / open article (right side)
+  if (hasUrl) {
+    const openLink = document.createElement('a');
+    openLink.className = 'dp-btn dp-share';
+    openLink.href = item.url;
+    openLink.target = '_blank';
+    openLink.rel = 'noopener noreferrer';
+    openLink.title = 'Open article';
+    openLink.innerHTML = SVG_SHARE;
+    actions.appendChild(openLink);
+  }
+
+  post.appendChild(actions);
+  return post;
+}
+
+// Tiny element factory
+function el(tag, cls = '') {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+
+// ── Doom tab switcher ──────────────────────────────────────────────────────
+document.querySelectorAll('.doom-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (tab.dataset.doom !== doomSubMode) startDoom(tab.dataset.doom);
+  });
+});
+
 // ── Boot ───────────────────────────────────────────────────────────────────
 const { savedMode, savedIndex } = loadSavedState();
 
-// Highlight the correct mode button
 document.querySelectorAll('.mode-btn').forEach(b => {
   b.classList.toggle('active', b.dataset.mode === savedMode);
 });

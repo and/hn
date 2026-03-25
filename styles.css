@@ -334,12 +334,309 @@ footer kbd {
   font-size: .7rem;
 }
 
+/* ── Doom button ───────────────────────────────────────────────────────── */
+.mode-btn--doom {
+  border-color: rgba(255,255,255,.5);
+}
+.mode-btn--doom.active {
+  background: #1a1a1a;
+  color: #ff6600;
+  border-color: #1a1a1a;
+}
+
+/* ── Doom view container ───────────────────────────────────────────────── */
+.doom-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Main layout adjustments in doom mode */
+body.doom-active main {
+  justify-content: flex-start;
+  padding-top: 0;
+  gap: 0;
+}
+
+/* ── Doom tabs (Sequential / Mix) ──────────────────────────────────────── */
+.doom-tabs-bar {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  max-width: 468px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 44px; /* below the sticky header */
+  z-index: 50;
+}
+
+.doom-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: .75rem 1rem;
+  font-size: .85rem;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  letter-spacing: .02em;
+}
+
+.doom-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.doom-tab:hover:not(.active) {
+  color: var(--text);
+}
+
+/* ── Doom feed ─────────────────────────────────────────────────────────── */
+.doom-feed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 0 3rem;
+  gap: 1.5rem;
+}
+
+.doom-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  width: 100%;
+}
+
+/* ── Instagram-like post card ──────────────────────────────────────────── */
+.dp {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 468px;
+  width: calc(100% - 2rem);
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+/* ── Post header ───────────────────────────────────────────────────────── */
+.dp-header {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .8rem 1rem;
+}
+
+.dp-avatar {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* Instagram-style story ring */
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--orange);
+}
+
+.dp-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+
+.dp-author {
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-info {
+  font-size: .72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-badge {
+  flex-shrink: 0;
+  font-size: .62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  background: #fff3e6;
+  color: var(--orange-dk);
+  border: 1px solid #ffd6a5;
+  padding: .15rem .45rem;
+  border-radius: 4px;
+}
+
+/* ── Link preview (dark "image" block) ─────────────────────────────────── */
+.dp-link-preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: .4rem;
+  padding: 2rem 1.25rem 1.25rem;
+  min-height: 9rem;
+  background: #111;
+  text-decoration: none;
+  transition: background .15s;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle HN-orange left accent */
+.dp-link-preview::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--orange);
+  opacity: .7;
+}
+
+.dp-link-preview:hover { background: #1e1e1e; }
+
+.dp-link-host {
+  font-size: .68rem;
+  color: rgba(255,255,255,.45);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 600;
+}
+
+.dp-link-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+  overflow-wrap: break-word;
+}
+
+/* ── Text body (Ask HN / comments) ────────────────────────────────────── */
+.dp-text-body {
+  padding: .75rem 1.25rem;
+  font-size: .875rem;
+  line-height: 1.6;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  max-height: 10rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.dp-text-body::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2.5rem;
+  background: linear-gradient(transparent, var(--surface));
+  pointer-events: none;
+}
+
+.dp-text-body a { color: var(--link); }
+.dp-text-body p { margin-bottom: .4em; }
+.dp-text-body p:last-child { margin-bottom: 0; }
+.dp-text-body code {
+  background: #f0f0ea;
+  padding: .1em .3em;
+  border-radius: 3px;
+  font-size: .82em;
+}
+.dp-text-body pre {
+  background: #f0f0ea;
+  padding: .6em .9em;
+  border-radius: 5px;
+  overflow-x: auto;
+  font-size: .78rem;
+}
+
+/* ── Caption ───────────────────────────────────────────────────────────── */
+.dp-caption {
+  padding: .6rem 1rem .3rem;
+  font-size: .875rem;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.dp-caption strong {
+  font-weight: 700;
+  margin-right: .2em;
+}
+
+/* ── Actions bar ───────────────────────────────────────────────────────── */
+.dp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem 1rem .8rem;
+}
+
+.dp-actions-left {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+}
+
+.dp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .875rem;
+  font-weight: 500;
+  padding: .3rem;
+  text-decoration: none;
+  transition: color .12s, transform .12s;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dp-btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.dp-btn:hover { color: var(--orange); transform: scale(1.1); }
+.dp-btn:active { transform: scale(.95); }
+
+/* Heart: red on hover like Instagram */
+.dp-like:hover svg { stroke: #e0245e; }
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .card { padding: 1.25rem 1rem; }
   .card-title { font-size: 1.1rem; }
   header { gap: .75rem; padding: .5rem .75rem; }
   .mode-btn { font-size: .72rem; padding: .2rem .5rem; }
+
+  .dp { width: 100%; border-radius: 0; border-left: none; border-right: none; }
+  .doom-feed { gap: .75rem; padding: .5rem 0 3rem; }
+  .doom-tabs-bar { top: 42px; }
 }
 
 /* ── Accessibility ─────────────────────────────────────────────────────── */

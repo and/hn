@@ -120,6 +120,7 @@ const elIndex     = document.getElementById('card-index');
 const elPrev      = document.getElementById('prev-btn');
 const elNext      = document.getElementById('next-btn');
 const elProgress  = document.getElementById('progress-fill');
+const elProgressBar = document.getElementById('progress-bar');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function timeAgo(unix) {
@@ -245,6 +246,8 @@ function renderItem(item) {
 
   elType.textContent = item.type || '';
   elIndex.textContent = `${index + 1} / ${ids.length}`;
+  elIndex.title = index > 0 ? 'Tap to go back to #1' : '';
+  elIndex.classList.toggle('card-index--tappable', index > 0);
 
   let displayTitle;
   if (item.type === 'comment') {
@@ -326,6 +329,20 @@ async function go(delta) {
 
 elPrev.addEventListener('click', () => go(-1));
 elNext.addEventListener('click', () => go(1));
+
+// Index counter: tap to jump to first article
+elIndex.addEventListener('click', () => {
+  if (index > 0) { index = 0; renderCurrent(true); }
+});
+
+// Progress bar: click/tap to seek to any position
+elProgressBar.addEventListener('click', (e) => {
+  if (!ids.length) return;
+  const rect = elProgressBar.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const target = Math.round(ratio * (ids.length - 1));
+  if (target !== index) { index = target; renderCurrent(true); }
+});
 
 // Whole-card click → article URL (skip clicks on links/buttons inside the card)
 elCard.addEventListener('click', (e) => {

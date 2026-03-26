@@ -193,6 +193,18 @@ main {
   font-size: .75rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  border-radius: 4px;
+  transition: background .15s, color .15s;
+}
+
+.card-index--tappable {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.card-index--tappable:hover {
+  color: var(--orange);
 }
 
 .card-type {
@@ -315,6 +327,11 @@ main {
   background: var(--border);
   border-radius: 2px;
   overflow: hidden;
+  cursor: pointer;
+  /* Easier to tap on mobile */
+  padding: 8px 0;
+  margin: -8px 0;
+  box-sizing: content-box;
 }
 
 .progress-fill {

@@ -306,6 +306,12 @@ function renderItem(item) {
   elPrev.disabled = index === 0;
   elNext.disabled = index === ids.length - 1;
 
+  // Store destination for card click handler
+  const dest = item.url || (item.type === 'comment' && item.story_id
+    ? `${HN_ITEM_URL}${item.story_id}`
+    : `${HN_ITEM_URL}${item.id}`);
+  elCard.dataset.href = dest;
+
   window.__currentItem = item;
 }
 
@@ -320,6 +326,13 @@ async function go(delta) {
 
 elPrev.addEventListener('click', () => go(-1));
 elNext.addEventListener('click', () => go(1));
+
+// Whole-card click → article URL (skip clicks on links/buttons inside the card)
+elCard.addEventListener('click', (e) => {
+  if (e.target.closest('a, button')) return;
+  const dest = elCard.dataset.href;
+  if (dest) window.open(dest, '_blank', 'noopener noreferrer');
+});
 
 // ── Swipe gestures (card mode only) ───────────────────────────────────────
 let touchStartY = 0;

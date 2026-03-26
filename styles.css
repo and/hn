@@ -169,6 +169,13 @@ main {
   flex-direction: column;
   gap: .9rem;
   animation: fade-in .2s ease;
+  cursor: pointer;
+  transition: box-shadow .15s, border-color .15s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,.13);
+  border-color: #ccc;
 }
 
 @keyframes fade-in {

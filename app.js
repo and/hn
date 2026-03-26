@@ -321,6 +321,24 @@ async function go(delta) {
 elPrev.addEventListener('click', () => go(-1));
 elNext.addEventListener('click', () => go(1));
 
+// ── Swipe gestures (card mode only) ───────────────────────────────────────
+let touchStartY = 0;
+let touchStartX = 0;
+
+document.addEventListener('touchstart', (e) => {
+  touchStartY = e.touches[0].clientY;
+  touchStartX = e.touches[0].clientX;
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+  if (mode === 'doom') return;
+  const dy = touchStartY - e.changedTouches[0].clientY;
+  const dx = touchStartX - e.changedTouches[0].clientX;
+  // Require mostly vertical swipe (dy > dx) and minimum 50px distance
+  if (Math.abs(dy) < 50 || Math.abs(dy) < Math.abs(dx)) return;
+  go(dy > 0 ? 1 : -1); // swipe up → next, swipe down → prev
+}, { passive: true });
+
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (mode === 'doom') return; // doom scroll uses native scroll

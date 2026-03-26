@@ -349,14 +349,19 @@ footer kbd {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
 /* Main layout adjustments in doom mode */
 body.doom-active main {
   justify-content: flex-start;
-  padding-top: 0;
+  padding: 0;
   gap: 0;
+  flex: 1;
+  overflow: hidden; /* doom-feed is the scroll container */
+}
+
+body.doom-active .doom-view {
+  height: 100%;
 }
 
 /* ── Doom tabs (Sequential / Mix) ──────────────────────────────────────── */
@@ -364,12 +369,10 @@ body.doom-active main {
   display: flex;
   gap: 0;
   width: 100%;
-  max-width: 468px;
+  max-width: 100%;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
-  position: sticky;
-  top: 44px; /* below the sticky header */
-  z-index: 50;
+  flex-shrink: 0;
 }
 
 .doom-tab {
@@ -402,8 +405,12 @@ body.doom-active main {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  padding: 1rem 0 3rem;
-  gap: 1.5rem;
+  flex: 1;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+  padding: 0;
+  gap: 0;
 }
 
 .doom-more {
@@ -412,6 +419,7 @@ body.doom-active main {
   align-items: center;
   padding: 1.5rem;
   width: 100%;
+  flex-shrink: 0;
 }
 
 /* ── Instagram-like post card ──────────────────────────────────────────── */
@@ -424,11 +432,25 @@ body.doom-active main {
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
   cursor: pointer;
+  /* Single-item scroll snap */
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  height: var(--doom-post-h, 80vh);
+  display: flex;
+  flex-direction: column;
 }
 
 .dp:hover {
   box-shadow: 0 3px 12px rgba(0,0,0,.12);
 }
+
+/* Content area grows to fill available post height */
+.dp-link-preview { flex: 1; min-height: 0; }
+.dp-text-body    { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
+
+/* Push actions to the bottom */
+.dp-actions { margin-top: auto; }
 
 /* ── Post header ───────────────────────────────────────────────────────── */
 .dp-header {

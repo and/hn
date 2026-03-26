@@ -408,6 +408,13 @@ let doomFetching = false;
 let doomObserver = null;
 let doomSourcesReady = false;
 
+function setDoomPostHeight() {
+  const headerH = document.querySelector('header')?.offsetHeight ?? 44;
+  const tabsH   = document.querySelector('.doom-tabs-bar')?.offsetHeight ?? 44;
+  document.documentElement.style.setProperty(
+    '--doom-post-h', `calc(100dvh - ${headerH + tabsH}px)`);
+}
+
 function activateDoom() {
   mode = 'doom';
   document.body.classList.add('doom-active');
@@ -417,8 +424,13 @@ function activateDoom() {
   setVisible(elControls, false);
   setVisible(elDoomView, true);
   document.title = 'Doom Scroll | HN Reader';
+  setDoomPostHeight();
   startDoom(doomSubMode);
 }
+
+window.addEventListener('resize', () => {
+  if (mode === 'doom') setDoomPostHeight();
+});
 
 function deactivateDoom() {
   document.body.classList.remove('doom-active');
